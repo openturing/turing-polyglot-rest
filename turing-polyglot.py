@@ -16,8 +16,21 @@ def ent(text: str, model: str):
 
     passport_regex = "[A-PR-WYa-pr-wy][1-9]\\d" + "\\s?\\d{4}[1-9]"
     passport_p = re.compile(passport_regex)
-
     passport = re.findall(passport_p, text)
+
+    phone_regex = r"\b[0-9]{2,3}-? ?[0-9]{6,7}\b"
+    phone_p = re.compile(phone_regex)   
+    phones = re.findall(phone_p, text)
+
+    dni_regex = r"\b[0-9]{8,8}[A-Za-z]\b"
+    dni_p = re.compile(dni_regex)   
+    dnis = re.findall(dni_p, text)
+
+    nie_regex = r"\b[XYZ][0-9]{7,8}[A-Z]\b"
+    #nie_regex = "[XYZ][0-9]{7,8}[A-Z]"
+    nie_p = re.compile(nie_regex)   
+    nies = re.findall(nie_p, text)
+
     polyglot_text = Text(text,  hint_language_code=model)
 
     places = []
@@ -34,7 +47,7 @@ def ent(text: str, model: str):
         if entity.tag == 'I-ORG':
             orgs.append(' '.join(entity))
 
-    return [{'places': places, 'persons': persons, 'orgs': orgs, 'emails': emails, 'passport': passport, 'names': names}]
+    return [{'places': places, 'persons': persons, 'orgs': orgs, 'emails': emails, 'passport': passport, 'names': names, 'phones': phones, 'dni': dnis, 'nie': nies}]
 
 
 if __name__ == '__main__':
