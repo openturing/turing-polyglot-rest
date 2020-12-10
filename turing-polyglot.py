@@ -8,16 +8,21 @@ import re
 from nameparser import HumanName
 import json
 
+class TurPolyToken:
+    def __init__(self, token, label):
+        self.token = token
+        self.label = label
+
 
 @hug.post('/ent')
-def ent(text: str, model: str):
+def ent(text: str, model: str, nlp_provider: nlp):
     """Get entities for polyglot Entities."""
 
     emails = re.findall(r'[\w\.-]+@[\w\.-]+', text)
 
     passport_regex = "[A-PR-WYa-pr-wy][1-9]\\d" + "\\s?\\d{4}[1-9]"
     passport_p = re.compile(passport_regex)
-    passport = re.findall(passport_p, text)
+    passports = re.findall(passport_p, text)
 
     phone_regex = r"\b[0-9]{2,3}-? ?[0-9]{6,7}\b"
     phone_p = re.compile(phone_regex)
@@ -34,23 +39,48 @@ def ent(text: str, model: str):
     cif_regex = r"\b[ABCDEFGHJKLMNPQRSUVW][0-9]{7}[0-9A-J]\b"
     cif_p = re.compile(cif_regex)
     cifs = re.findall(cif_p, text)
+
     polyglot_text = Text(text,  hint_language_code=model)
 
-    places = []
-    persons = []
-    names = []
-    orgs = []
+    tokens = []
     for entity in polyglot_text.entities:
-        if entity.tag == 'I-LOC':
-            places.append(' '.join(entity))
-        if entity.tag == 'I-PER':
-            person = ' '.join(entity).replace(" .", ".")
-            persons.append(person)
-            names.append(HumanName(person).as_dict())
-        if entity.tag == 'I-ORG':
-            orgs.append(' '.join(entity))
 
-    return [{'places': places, 'persons': persons, 'orgs': orgs, 'emails': emails, 'passport': passport, 'names': names, 'phones': phones, 'dni': dnis, 'nie': nies, 'cif': cifs}]
+        if entity.tag == 'I-LOC':
+            tokens.append(TurPolyToken(' '.join(entity), 'LOC').__dict__)
+
+        if entity.tag == 'I-PER':            
+            person = ' '.join(entity).replace(" .", ".").replace("Vocal", "")
+            #tokens.append(TurPolyToken(person, 'PN').__dict__)
+            humanName = HumanName(person)
+
+            if humanName.first:
+                tokens.append(TurPolyToken(humanName.first, 'FIRST_NAME').__dict__)
+
+            if humanName.last:
+                tokens.append(TurPolyToken(humanName.surnames, 'LAST_NAME').__dict__)
+
+        if entity.tag == 'I-ORG':
+            tokens.append(TurPolyToken(' '.join(entity), 'ON').__dict__)
+
+        if passports:
+            for passport in passports:
+                tokens.append(TurPolyToken(passport, 'PASSPORT').__dict__)
+
+        if phones:
+            for phone in phones:
+                tokens.append(TurPolyToken(phone, 'PHONE').__dict__)
+
+        if dnis:
+            for dni in dnis:
+                tokens.append(TurPolyToken(dni, 'DNI').__dict__)
+        if nies:
+            for nie in nies:
+                tokens.append(TurPolyToken(nie, 'NIE').__dict__)
+        if cifs:
+            for cif in cifs:
+                tokens.append(TurPolyToken(cif, 'CIF').__dict__)
+
+    return tokens
 
 
 if __name__ == '__main__':
