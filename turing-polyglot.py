@@ -15,7 +15,7 @@ class TurPolyToken:
 
 
 @hug.post('/ent')
-def ent(text: str, model: str, nlp_provider: nlp):
+def ent(text: str, model: str):
     """Get entities for polyglot Entities."""
 
     emails = re.findall(r'[\w\.-]+@[\w\.-]+', text)
